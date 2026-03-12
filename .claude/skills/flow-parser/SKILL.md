@@ -46,6 +46,7 @@ const parser = new XMLParser({
     'assignmentItems',
     'conditions',
     'waitEvents',
+    'variables',
   ].includes(tagName),
 });
 ```

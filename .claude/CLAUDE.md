@@ -195,26 +195,22 @@ SFFlowExplorer/
 │           └── SKILL.md
 ├── src/
 │   ├── cli/
-│   │   └── index.ts             ← CLI entry point (oclif or commander)
-│   ├── auth/
-│   │   └── salesforce-auth.ts   ← sf CLI alias resolution via @salesforce/core
-│   ├── fetcher/
-│   │   └── flow-fetcher.ts      ← Retrieves .flow-meta.xml from org or local FS
+│   │   ├── index.ts             ← CLI entry point (commander)
+│   │   └── generate.ts          ← Pipeline: parse → layout → generate
 │   ├── parser/
 │   │   └── flow-parser.ts       ← XML → FlowGraph internal model
 │   ├── model/
-│   │   └── flow-graph.ts        ← Core data model (nodes, edges, types)
+│   │   └── flow-graph.ts        ← Core data model (nodes, edges, variables, types)
 │   ├── layout/
-│   │   └── layout-engine.ts     ← dagre/elk layout computation
-│   ├── generator/
-│   │   └── drawio-generator.ts  ← FlowGraph → Draw.io XML
-│   └── utils/
-│       └── xml-builder.ts       ← mxGraph XML construction helpers
+│   │   └── layout-engine.ts     ← dagre layout + normalisation + waypoints
+│   └── generator/
+│       └── drawio-generator.ts  ← FlowGraph → Draw.io XML
 ├── tests/
 │   ├── fixtures/                ← Sample .flow-meta.xml files (all edge cases)
 │   └── *.test.ts
 └── docs/
-    └── mapping-matrix.md        ← Exported from DOMAIN-KNOWLEDGE.md
+    ├── DOMAIN-KNOWLEDGE.md      ← Metadata mapping + edge-case encyclopedia
+    └── GITHUB-REPO-SETUP.md
 ```
 
 ### Core Data Model
@@ -265,16 +261,11 @@ export interface FlowGraph {
 ### Pipeline Architecture (Pipe-and-Filter)
 
 ```
-[Input: .flow-meta.xml]
+[Input: .flow-meta.xml (local file via --file)]
         │
         ▼
 ┌──────────────────┐
-│   flow-fetcher   │  Resolves: local file | SF org via sf CLI auth
-└────────┬─────────┘
-         │ raw XML string
-         ▼
-┌──────────────────┐
-│   flow-parser    │  XML → FlowGraph (nodes + edges)
+│   flow-parser    │  XML → FlowGraph (nodes + edges + variables)
 └────────┬─────────┘
          │ FlowGraph (no coordinates)
          ▼
@@ -413,7 +404,7 @@ When parsing Salesforce Flow XML:
    - ignoreAttributes: false
    - attributeNamePrefix: '@_'
    - parseAttributeValue: true
-   - isArray: (tagName) => ['decisions', 'rules', 'connectors', ...].includes(tagName)
+   - isArray: (tagName) => ['decisions', 'rules', 'connectors', 'variables', ...].includes(tagName)
 
 2. Always normalise to array before iterating — Salesforce XML may return a single
    object instead of an array when there is only one child element.
@@ -509,7 +500,7 @@ When computing layout:
    - Shift all nodes so the top-left node is at (40, 40) with 40px margin
 
 4. Back-edge routing:
-   - For edges where isBackEdge === true, add a waypoint 200px to the right
+   - For edges where isBackEdge === true, add a waypoint (source width + 60px) to the right
      of the source node so the loop connector bends visibly around the subgraph
    - Use mxGeometry Array of mxPoint for waypoints
 
