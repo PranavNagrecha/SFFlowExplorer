@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>59.0</apiVersion>
+    <label>Loop With Subflow</label>
+    <processType>Flow</processType>
+    <start>
+        <locationX>176</locationX>
+        <locationY>48</locationY>
+        <connector>
+            <targetReference>Get_Contacts</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <recordLookups>
+        <name>Get_Contacts</name>
+        <label>Get Contacts</label>
+        <locationX>176</locationX>
+        <locationY>168</locationY>
+        <connector>
+            <targetReference>Loop_Over_Contacts</targetReference>
+        </connector>
+        <faultConnector>
+            <targetReference>Screen_Error</targetReference>
+        </faultConnector>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Contact</object>
+        <outputReference>contactList</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Name</queriedFields>
+    </recordLookups>
+    <loops>
+        <name>Loop_Over_Contacts</name>
+        <label>Loop Over Contacts</label>
+        <locationX>176</locationX>
+        <locationY>288</locationY>
+        <collectionReference>contactList</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Call_Update_Subflow</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Screen_Done</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <subflows>
+        <name>Call_Update_Subflow</name>
+        <label>Update Contact Subflow</label>
+        <locationX>176</locationX>
+        <locationY>408</locationY>
+        <connector>
+            <targetReference>Loop_Over_Contacts</targetReference>
+        </connector>
+        <flowName>Contact_Update_Child</flowName>
+    </subflows>
+    <screens>
+        <name>Screen_Done</name>
+        <label>All Done</label>
+        <locationX>176</locationX>
+        <locationY>528</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <screens>
+        <name>Screen_Error</name>
+        <label>Error</label>
+        <locationX>396</locationX>
+        <locationY>288</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+</Flow>

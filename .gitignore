@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Generated diagrams (don't commit outputs to the repo)
+*.drawio
+
+# OS / editor files
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Test output
+test-output.drawio
+
+# Logs
+*.log
+npm-debug.log*

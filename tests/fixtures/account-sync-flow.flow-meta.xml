@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC TEST FIXTURE — fictional scenario, not real org data -->
+<!-- All locationX/Y are 0 to exercise pure-dagre layout path -->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+<apiVersion>66.0</apiVersion>
+<processType>AutoLaunchedFlow</processType>
+<status>Active</status>
+<label>Account Sync — Upsert Partner Link</label>
+
+<!-- === Assignments === -->
+<assignments>
+  <name>Assign_Active_Link</name>
+  <label>Assign Active Link Variable</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <assignmentItems>
+    <assignToReference>LinkVar</assignToReference>
+    <operator>Assign</operator>
+    <value><elementReference>Get_Existing_Link</elementReference></value>
+  </assignmentItems>
+  <connector><targetReference>Update_Link</targetReference></connector>
+</assignments>
+
+<assignments>
+  <name>Assign_Inactive_Link</name>
+  <label>Assign Inactive Link, Set Status Active</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <assignmentItems>
+    <assignToReference>LinkVar</assignToReference>
+    <operator>Assign</operator>
+    <value><elementReference>Get_Existing_Link</elementReference></value>
+  </assignmentItems>
+  <connector>
+    <isGoTo>true</isGoTo>
+    <targetReference>Update_Link</targetReference>
+  </connector>
+</assignments>
+
+<assignments>
+  <name>Assign_Alt_Link</name>
+  <label>Assign Alternative Link Variable</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <assignmentItems>
+    <assignToReference>LinkVar</assignToReference>
+    <operator>Assign</operator>
+    <value><elementReference>Get_Alt_Link</elementReference></value>
+  </assignmentItems>
+  <connector>
+    <isGoTo>true</isGoTo>
+    <targetReference>Update_Link</targetReference>
+  </connector>
+</assignments>
+
+<assignments>
+  <name>Assign_Contact_Var</name>
+  <label>Assign Contact Variable</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <assignmentItems>
+    <assignToReference>ContactVar</assignToReference>
+    <operator>Assign</operator>
+    <value><elementReference>Get_Contact</elementReference></value>
+  </assignmentItems>
+  <connector><targetReference>Get_Existing_Link</targetReference></connector>
+</assignments>
+
+<assignments>
+  <name>Set_Primary_Partner</name>
+  <label>Set Primary Partner on Contact</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <assignmentItems>
+    <assignToReference>ContactVar.Primary_Partner__c</assignToReference>
+    <operator>Assign</operator>
+    <value><elementReference>AccountId</elementReference></value>
+  </assignmentItems>
+  <connector><targetReference>Update_Contact</targetReference></connector>
+</assignments>
+
+<!-- === Decisions === -->
+<decisions>
+  <name>Found_Link</name>
+  <label>Existing Link Found?</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <defaultConnectorLabel>No Link Found</defaultConnectorLabel>
+  <rules>
+    <name>Found_Active</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Assign_Active_Link</targetReference></connector>
+    <label>Found — Active</label>
+  </rules>
+  <rules>
+    <name>Found_Inactive</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Assign_Inactive_Link</targetReference></connector>
+    <label>Found — Inactive</label>
+  </rules>
+  <rules>
+    <name>No_Link</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Get_Alt_Link</targetReference></connector>
+    <label>No Link — Check Alternative</label>
+  </rules>
+</decisions>
+
+<decisions>
+  <name>Check_Alt_Link</name>
+  <label>Alternative Link Found?</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <defaultConnector><targetReference>Create_Link</targetReference></defaultConnector>
+  <defaultConnectorLabel>Not Found — Create</defaultConnectorLabel>
+  <rules>
+    <name>Alt_Found</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Assign_Alt_Link</targetReference></connector>
+    <label>Found</label>
+  </rules>
+</decisions>
+
+<decisions>
+  <name>Contact_Primary_Update_Needed</name>
+  <label>Contact Primary Partner Update Needed?</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <defaultConnector><targetReference>Update_Contact</targetReference></defaultConnector>
+  <defaultConnectorLabel>No Update Needed</defaultConnectorLabel>
+  <rules>
+    <name>Yes_Update</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Set_Primary_Partner</targetReference></connector>
+    <label>Yes</label>
+  </rules>
+</decisions>
+
+<!-- === Record Lookups === -->
+<recordLookups>
+  <name>Get_Account_Record_Type</name>
+  <label>Get Account Record Type</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+  <connector><targetReference>Get_Contact</targetReference></connector>
+  <getFirstRecordOnly>true</getFirstRecordOnly>
+  <object>RecordType</object>
+  <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordLookups>
+
+<recordLookups>
+  <name>Get_Contact</name>
+  <label>Get Contact Record</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+  <connector><targetReference>Assign_Contact_Var</targetReference></connector>
+  <getFirstRecordOnly>true</getFirstRecordOnly>
+  <object>Contact</object>
+  <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordLookups>
+
+<recordLookups>
+  <name>Get_Existing_Link</name>
+  <label>Get Existing Partner Link</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+  <connector><targetReference>Found_Link</targetReference></connector>
+  <getFirstRecordOnly>true</getFirstRecordOnly>
+  <object>Partner_Link__c</object>
+  <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordLookups>
+
+<recordLookups>
+  <name>Get_Alt_Link</name>
+  <label>Get Alternative Partner Link</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+  <connector><targetReference>Check_Alt_Link</targetReference></connector>
+  <getFirstRecordOnly>true</getFirstRecordOnly>
+  <object>Partner_Link__c</object>
+  <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordLookups>
+
+<!-- === Record Updates / Creates === -->
+<recordCreates>
+  <name>Create_Link</name>
+  <label>Create New Partner Link</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <connector><targetReference>Update_Others</targetReference></connector>
+  <inputReference>LinkVar</inputReference>
+</recordCreates>
+
+<recordUpdates>
+  <name>Update_Link</name>
+  <label>Update Partner Link</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <connector><targetReference>Update_Others</targetReference></connector>
+  <inputReference>LinkVar</inputReference>
+</recordUpdates>
+
+<recordUpdates>
+  <name>Update_Others</name>
+  <label>Demote All Other Links to Non-Primary</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <connector><targetReference>Contact_Primary_Update_Needed</targetReference></connector>
+  <object>Partner_Link__c</object>
+</recordUpdates>
+
+<recordUpdates>
+  <name>Update_Contact</name>
+  <label>Update Contact Record</label>
+  <locationX>0</locationX><locationY>0</locationY>
+  <inputReference>ContactVar</inputReference>
+</recordUpdates>
+
+<!-- === Start === -->
+<start>
+  <locationX>0</locationX><locationY>0</locationY>
+  <connector><targetReference>Get_Account_Record_Type</targetReference></connector>
+</start>
+</Flow>

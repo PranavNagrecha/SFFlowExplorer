@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC TEST FIXTURE — fictional scenario, not real org data -->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+<apiVersion>59.0</apiVersion>
+<processType>Flow</processType>
+<status>Active</status>
+<interviewLabel>Event Registration Flow {!$Flow.CurrentDateTime}</interviewLabel>
+<label>Event Registration Flow</label>
+
+<!-- === Screens === -->
+<screens>
+  <name>Welcome_Screen</name>
+  <label>Welcome</label>
+  <locationX>440</locationX>
+  <locationY>134</locationY>
+  <allowBack>false</allowBack>
+  <allowFinish>true</allowFinish>
+  <allowPause>false</allowPause>
+  <connector><targetReference>Get_Event</targetReference></connector>
+  <showFooter>true</showFooter>
+  <showHeader>true</showHeader>
+</screens>
+
+<screens>
+  <name>Error_Screen</name>
+  <label>Error — Not Authorised</label>
+  <locationX>740</locationX>
+  <locationY>458</locationY>
+  <allowBack>false</allowBack>
+  <allowFinish>true</allowFinish>
+  <allowPause>false</allowPause>
+  <showFooter>false</showFooter>
+  <showHeader>false</showHeader>
+</screens>
+
+<screens>
+  <name>Select_Attendee_Screen</name>
+  <label>Select Attendee</label>
+  <locationX>336</locationX>
+  <locationY>566</locationY>
+  <allowBack>true</allowBack>
+  <allowFinish>true</allowFinish>
+  <allowPause>false</allowPause>
+  <connector><targetReference>Send_Confirmation_Email</targetReference></connector>
+  <showFooter>true</showFooter>
+  <showHeader>true</showHeader>
+</screens>
+
+<screens>
+  <name>End_Screen</name>
+  <label>All Done</label>
+  <locationX>468</locationX>
+  <locationY>3062</locationY>
+  <allowBack>false</allowBack>
+  <allowFinish>true</allowFinish>
+  <allowPause>false</allowPause>
+  <showFooter>false</showFooter>
+  <showHeader>false</showHeader>
+</screens>
+
+<!-- === Record Lookups === -->
+<recordLookups>
+  <name>Get_Event</name>
+  <label>Get Event Record</label>
+  <locationX>440</locationX>
+  <locationY>242</locationY>
+  <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+  <connector><targetReference>Check_Presenter_Role</targetReference></connector>
+  <getFirstRecordOnly>true</getFirstRecordOnly>
+  <object>Event__c</object>
+  <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordLookups>
+
+<recordLookups>
+  <name>Get_Pending_Registrations</name>
+  <label>Get Pending Registrations</label>
+  <locationX>336</locationX>
+  <locationY>458</locationY>
+  <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+  <connector><targetReference>Select_Attendee_Screen</targetReference></connector>
+  <getFirstRecordOnly>false</getFirstRecordOnly>
+  <object>Registration__c</object>
+  <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordLookups>
+
+<recordLookups>
+  <name>Get_Remaining</name>
+  <label>Get Remaining Registrations</label>
+  <locationX>336</locationX>
+  <locationY>2846</locationY>
+  <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+  <connector><targetReference>Check_Remaining</targetReference></connector>
+  <getFirstRecordOnly>true</getFirstRecordOnly>
+  <object>Registration__c</object>
+  <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordLookups>
+
+<!-- === Decisions === -->
+<decisions>
+  <name>Check_Presenter_Role</name>
+  <label>Is User the Presenter?</label>
+  <locationX>440</locationX>
+  <locationY>350</locationY>
+  <defaultConnector><targetReference>Error_Screen</targetReference></defaultConnector>
+  <defaultConnectorLabel>No</defaultConnectorLabel>
+  <rules>
+    <name>Yes_Presenter</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Get_Pending_Registrations</targetReference></connector>
+    <label>Yes</label>
+  </rules>
+</decisions>
+
+<decisions>
+  <name>Check_Flag_Needed</name>
+  <label>Flag Needed?</label>
+  <locationX>336</locationX>
+  <locationY>998</locationY>
+  <defaultConnector><targetReference>Get_Remaining</targetReference></defaultConnector>
+  <defaultConnectorLabel>No</defaultConnectorLabel>
+  <rules>
+    <name>Yes_Flag</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Create_Flag</targetReference></connector>
+    <label>Yes</label>
+  </rules>
+</decisions>
+
+<decisions>
+  <name>Check_Remaining</name>
+  <label>More Registrations?</label>
+  <locationX>336</locationX>
+  <locationY>2954</locationY>
+  <defaultConnector><targetReference>Update_Event</targetReference></defaultConnector>
+  <defaultConnectorLabel>No</defaultConnectorLabel>
+  <rules>
+    <name>Yes_More</name>
+    <conditionLogic>and</conditionLogic>
+    <connector>
+      <isGoTo>true</isGoTo>
+      <targetReference>Get_Pending_Registrations</targetReference>
+    </connector>
+    <label>Yes</label>
+  </rules>
+</decisions>
+
+<!-- === Action Calls === -->
+<actionCalls>
+  <name>Send_Confirmation_Email</name>
+  <label>Send Confirmation Email</label>
+  <locationX>336</locationX>
+  <locationY>674</locationY>
+  <actionName>emailSimple</actionName>
+  <actionType>emailSimple</actionType>
+  <connector><targetReference>Update_Registration</targetReference></connector>
+  <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+  <nameSegment>emailSimple</nameSegment>
+</actionCalls>
+
+<actionCalls>
+  <name>Notify_Admin</name>
+  <label>Notify Admin of Flag</label>
+  <locationX>182</locationX>
+  <locationY>2330</locationY>
+  <actionName>emailSimple</actionName>
+  <actionType>emailSimple</actionType>
+  <connector><targetReference>Get_Remaining</targetReference></connector>
+  <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+  <nameSegment>emailSimple</nameSegment>
+</actionCalls>
+
+<!-- === Record Updates === -->
+<recordUpdates>
+  <name>Update_Registration</name>
+  <label>Update Registration Record</label>
+  <locationX>336</locationX>
+  <locationY>782</locationY>
+  <connector><targetReference>Check_Flag_Needed</targetReference></connector>
+  <object>Registration__c</object>
+</recordUpdates>
+
+<recordUpdates>
+  <name>Update_Event</name>
+  <label>Mark Event Closed</label>
+  <locationX>468</locationX>
+  <locationY>3062</locationY>
+  <connector><targetReference>End_Screen</targetReference></connector>
+  <object>Event__c</object>
+</recordUpdates>
+
+<!-- === Record Creates === -->
+<recordCreates>
+  <name>Create_Flag</name>
+  <label>Create Risk Flag</label>
+  <locationX>182</locationX>
+  <locationY>2222</locationY>
+  <connector><targetReference>Notify_Admin</targetReference></connector>
+  <object>Flag__c</object>
+  <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordCreates>
+
+<!-- === Start === -->
+<start>
+  <locationX>414</locationX>
+  <locationY>0</locationY>
+  <connector><targetReference>Welcome_Screen</targetReference></connector>
+</start>
+</Flow>

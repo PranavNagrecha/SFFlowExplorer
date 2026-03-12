@@ -1,0 +1,40 @@
+export type FlowNodeType =
+  | 'start'
+  | 'decision'
+  | 'assignment'
+  | 'loop'
+  | 'recordCreate'
+  | 'recordUpdate'
+  | 'recordDelete'
+  | 'recordLookup'
+  | 'screen'
+  | 'actionCall'
+  | 'subflow'
+  | 'collectionProcessor'
+  | 'end';
+
+export interface FlowNode {
+  id: string;
+  name: string;
+  label: string;
+  type: FlowNodeType;
+  locationX: number;
+  locationY: number;
+  metadata: Record<string, unknown>;
+}
+
+export interface FlowEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  label?: string;
+  isFault: boolean;
+  isBackEdge: boolean;
+  waypoints?: Array<{ x: number; y: number }>;
+}
+
+export interface FlowGraph {
+  flowName: string;
+  nodes: Map<string, FlowNode>;
+  edges: FlowEdge[];
+}

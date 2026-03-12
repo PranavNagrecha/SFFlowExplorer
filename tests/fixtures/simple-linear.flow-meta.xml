@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>59.0</apiVersion>
+    <description>A simple linear flow for testing: Start → Assignment → Assignment → Screen</description>
+    <interviewLabel>Simple Linear Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Simple Linear Flow</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value><stringValue>LightningFlowBuilder</stringValue></value>
+    </processMetadataValues>
+    <processType>Flow</processType>
+    <start>
+        <locationX>176</locationX>
+        <locationY>48</locationY>
+        <connector>
+            <targetReference>Assign_Set_Name</targetReference>
+        </connector>
+    </start>
+    <status>Active</status>
+    <assignments>
+        <description>Set the contact name</description>
+        <name>Assign_Set_Name</name>
+        <label>Set Name</label>
+        <locationX>176</locationX>
+        <locationY>168</locationY>
+        <assignmentItems>
+            <assignToReference>contactName</assignToReference>
+            <operator>Assign</operator>
+            <value><stringValue>Test User</stringValue></value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Assign_Set_Email</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <description>Set the contact email</description>
+        <name>Assign_Set_Email</name>
+        <label>Set Email</label>
+        <locationX>176</locationX>
+        <locationY>288</locationY>
+        <assignmentItems>
+            <assignToReference>contactEmail</assignToReference>
+            <operator>Assign</operator>
+            <value><stringValue>test@example.com</stringValue></value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Screen_Confirm</targetReference>
+        </connector>
+    </assignments>
+    <screens>
+        <description>Confirmation screen</description>
+        <name>Screen_Confirm</name>
+        <label>Confirm Details</label>
+        <locationX>176</locationX>
+        <locationY>408</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+    <variables>
+        <name>contactName</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>contactEmail</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+</Flow>
