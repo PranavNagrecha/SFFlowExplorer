@@ -201,6 +201,60 @@ ${edges}
 
 ---
 
+## Enriched Node Labels
+
+DML nodes and actionCall nodes get a second line appended to their label using `&#xa;`:
+
+```typescript
+function enrichLabel(node: FlowNode): string {
+  switch (node.type) {
+    case 'recordCreate':  return sub ? `${label}\n+ ${obj ?? inputRef}` : label;
+    case 'recordUpdate':  return sub ? `${label}\n✎ ${inputRef ?? obj}` : label;
+    case 'recordDelete':  return sub ? `${label}\n− ${obj}` : label;
+    case 'recordLookup':  return sub ? `${label}\n🔍 ${obj}` : label;
+    case 'actionCall':    return actionName ? `${label}\n⚙ ${actionName}` : label;
+    default: return label;
+  }
+}
+```
+
+**Critical:** call `escapeXml()` FIRST, then `.replace(/\n/g, '&#xa;')`. Never reverse the order — escaping after replacement would double-encode the `&` in `&#xa;`.
+
+Also add `verticalAlign=top;` to the style string for all enriched types so the first line stays anchored at the top.
+
+---
+
+## Legend Rendering Rules
+
+Two legend containers may appear after all flow vertices and edges. Both use `swimlane` style. Parent must be `"1"` for containers; child cells use the container ID as parent.
+
+### Variable legend (bottom-left)
+- ID: `legend__container`
+- Position: `x=40`, `y=(maxNodeBottom + 120)`
+- Only rendered if `graph.variables.length > 0`
+- Child row IDs: `legend__row__{varName}`
+- Prefixes: `→` input-only, `←` output-only, `↔` input+output, `•` internal
+- Collection types get `[]` suffix on dataType
+
+### Shape legend (bottom-right)
+- ID: `legend_container__shapes`
+- Position: `x=(maxNodeRight + 160)`, `y=(maxNodeBottom + 120)`
+- Always rendered (every graph has at least a start node)
+- Only includes `FlowNodeType` values actually present in `graph.nodes`
+- Only includes connector rows for edge types actually present in `graph.edges`
+- Child cell IDs: `legend_shape__{type}`, `legend_label__{type}`, `legend_conn__{standard|fault|back}`, `legend_conn__{name}__line`
+
+### ID collision rule (non-negotiable)
+Legend cell IDs must **never** match flow element IDs. The `legend__` / `legend_` prefix guarantees this — never omit it. `legend_shape__start` and `start` are different cells; sharing an ID would corrupt the diagram in Draw.io.
+
+### escapeXml applies to legend content too
+Variable names and flow names can contain special characters. Always pipe through `escapeXml()` before placing in `value` attributes.
+
+### Connector preview cells
+Use `shape=line;vertex="1"` rather than `edge="1"` for connector preview rows. Using `edge="1"` in legend cells pollutes the edge count and breaks tests that assert `edgeCount === graph.edges.length`.
+
+---
+
 ## Definition of Done (Generator)
 
 - [ ] Output XML parses without errors in `xml-lint`
@@ -210,4 +264,7 @@ ${edges}
 - [ ] Subflow nodes render in the purple colour family
 - [ ] Labels are not truncated (test with a 60-character label)
 - [ ] XML special characters in labels are escaped
+- [ ] Enriched labels use `&#xa;` (not literal newline) inside `value=""` attributes
+- [ ] Variable legend appears for flows with variables; absent for flows without
+- [ ] Shape legend appears with only the node/connector types present
 - [ ] Large flow test (25 nodes) produces a readable, non-overlapping diagram

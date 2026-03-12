@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FIXTURE: Lead Qualification Flow (with variables for testing) -->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+<apiVersion>59.0</apiVersion>
+<processType>AutoLaunchedFlow</processType>
+<status>Active</status>
+<label>Lead Qualification — Auto Score</label>
+
+<start>
+  <locationX>182</locationX>
+  <locationY>0</locationY>
+  <connector><targetReference>Get_Lead_Source_Config</targetReference></connector>
+  <filterLogic>and</filterLogic>
+  <filters>
+    <field>IsConverted</field>
+    <operator>EqualTo</operator>
+    <value><booleanValue>false</booleanValue></value>
+  </filters>
+  <object>Lead</object>
+  <recordTriggerType>Create</recordTriggerType>
+  <triggerType>RecordAfterSave</triggerType>
+</start>
+
+<variables>
+  <name>leadScore</name>
+  <dataType>Number</dataType>
+  <isCollection>false</isCollection>
+  <isInput>false</isInput>
+  <isOutput>false</isOutput>
+  <scale>0</scale>
+</variables>
+
+<variables>
+  <name>inputLead</name>
+  <dataType>SObject</dataType>
+  <isCollection>false</isCollection>
+  <isInput>true</isInput>
+  <isOutput>false</isOutput>
+  <objectType>Lead</objectType>
+</variables>
+
+<variables>
+  <name>errorMessages</name>
+  <dataType>String</dataType>
+  <isCollection>true</isCollection>
+  <isInput>false</isInput>
+  <isOutput>true</isOutput>
+</variables>
+
+<variables>
+  <name>qualificationResult</name>
+  <dataType>String</dataType>
+  <isCollection>false</isCollection>
+  <isInput>true</isInput>
+  <isOutput>true</isOutput>
+</variables>
+
+<recordLookups>
+  <name>Get_Lead_Source_Config</name>
+  <label>Get Lead Source Config</label>
+  <locationX>182</locationX>
+  <locationY>120</locationY>
+  <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+  <connector><targetReference>Score_by_Source</targetReference></connector>
+  <getFirstRecordOnly>true</getFirstRecordOnly>
+  <object>Lead_Source_Config__c</object>
+  <storeOutputAutomatically>true</storeOutputAutomatically>
+</recordLookups>
+
+<decisions>
+  <name>Score_by_Source</name>
+  <label>Score by Lead Source</label>
+  <locationX>182</locationX>
+  <locationY>240</locationY>
+  <defaultConnector><targetReference>Assign_Low_Score</targetReference></defaultConnector>
+  <defaultConnectorLabel>Other / Unknown</defaultConnectorLabel>
+  <rules>
+    <name>Webinar</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Assign_High_Score</targetReference></connector>
+    <label>Webinar</label>
+  </rules>
+  <rules>
+    <name>Referral</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Assign_High_Score</targetReference></connector>
+    <label>Partner Referral</label>
+  </rules>
+  <rules>
+    <name>Web_Form</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Assign_Medium_Score</targetReference></connector>
+    <label>Web Form</label>
+  </rules>
+</decisions>
+
+<assignments>
+  <name>Assign_High_Score</name>
+  <label>Set Score — High (80)</label>
+  <locationX>50</locationX>
+  <locationY>360</locationY>
+  <assignmentItems>
+    <assignToReference>$Record.Lead_Score__c</assignToReference>
+    <operator>Assign</operator>
+    <value><numberValue>80</numberValue></value>
+  </assignmentItems>
+  <connector><targetReference>Check_Score_Threshold</targetReference></connector>
+</assignments>
+
+<assignments>
+  <name>Assign_Medium_Score</name>
+  <label>Set Score — Medium (50)</label>
+  <locationX>182</locationX>
+  <locationY>360</locationY>
+  <assignmentItems>
+    <assignToReference>$Record.Lead_Score__c</assignToReference>
+    <operator>Assign</operator>
+    <value><numberValue>50</numberValue></value>
+  </assignmentItems>
+  <connector><targetReference>Check_Score_Threshold</targetReference></connector>
+</assignments>
+
+<assignments>
+  <name>Assign_Low_Score</name>
+  <label>Set Score — Low (10)</label>
+  <locationX>314</locationX>
+  <locationY>360</locationY>
+  <assignmentItems>
+    <assignToReference>$Record.Lead_Score__c</assignToReference>
+    <operator>Assign</operator>
+    <value><numberValue>10</numberValue></value>
+  </assignmentItems>
+  <connector><targetReference>Check_Score_Threshold</targetReference></connector>
+</assignments>
+
+<decisions>
+  <name>Check_Score_Threshold</name>
+  <label>Score ≥ 70?</label>
+  <locationX>182</locationX>
+  <locationY>480</locationY>
+  <defaultConnector><targetReference>Update_Lead_Score</targetReference></defaultConnector>
+  <defaultConnectorLabel>Below Threshold</defaultConnectorLabel>
+  <rules>
+    <name>MQL</name>
+    <conditionLogic>and</conditionLogic>
+    <connector><targetReference>Notify_Sales_Rep</targetReference></connector>
+    <label>MQL — Notify Sales</label>
+  </rules>
+</decisions>
+
+<actionCalls>
+  <name>Notify_Sales_Rep</name>
+  <label>Notify Sales Rep (Email)</label>
+  <locationX>50</locationX>
+  <locationY>600</locationY>
+  <actionName>emailSimple</actionName>
+  <actionType>emailSimple</actionType>
+  <connector><targetReference>Update_Lead_Score</targetReference></connector>
+  <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+  <nameSegment>emailSimple</nameSegment>
+</actionCalls>
+
+<recordUpdates>
+  <name>Update_Lead_Score</name>
+  <label>Update Lead with Score</label>
+  <locationX>182</locationX>
+  <locationY>720</locationY>
+  <inputAssignments>
+    <field>Lead_Score__c</field>
+    <value><elementReference>$Record.Lead_Score__c</elementReference></value>
+  </inputAssignments>
+  <inputReference>$Record</inputReference>
+</recordUpdates>
+</Flow>

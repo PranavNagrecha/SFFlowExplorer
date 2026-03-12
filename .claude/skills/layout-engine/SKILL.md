@@ -204,3 +204,51 @@ function assertPositiveCoordinates(graph: FlowGraph): void {
 - [ ] Flows with Salesforce `locationX/Y` preserve those positions for nodes that have them
 - [ ] Layout completes in < 500ms for a 50-node flow
 - [ ] No infinite loops or stack overflows on graphs containing cycles
+
+---
+
+## Post-Processing Pipeline Order
+
+After `dagre.layout(g)` runs, apply passes in this exact order. Changing the order breaks coordinate assumptions downstream.
+
+1. `normaliseCoordinates()` — shift all nodes so min(x,y) = 40
+2. `equaliseSiblingSpacing()` — fan-out X equalisation (horizontal only, Y unchanged)
+3. `segregateFaultNodes()` — push fault-only nodes rightward
+4. `addBackEdgeWaypoints()` — compute waypoints using final positions
+
+**Never reorder these.** Waypoints must be last because they read `node.locationX/Y` — if those change after waypoints are set, connectors route to the wrong places.
+
+---
+
+## Fault-Only Node Detection
+
+A node is fault-only if every incoming edge targeting it has `isFault=true`. Nodes with zero incoming edges (only `start` qualifies) are never fault-only.
+
+```typescript
+export function identifyFaultOnlyNodes(graph: FlowGraph): Set<string> {
+  const faultOnly = new Set<string>();
+  for (const nodeId of graph.nodes.keys()) {
+    const incoming = graph.edges.filter((e) => e.targetId === nodeId);
+    if (incoming.length === 0) continue; // start node — skip
+    if (incoming.every((e) => e.isFault)) faultOnly.add(nodeId);
+  }
+  return faultOnly;
+}
+```
+
+Segregation: after normalisation, find `maxNonFaultRight = max(locationX + width)` across all non-fault nodes, then set fault-only node `locationX = maxNonFaultRight + 120`.
+
+---
+
+## Fan-Out Detection
+
+A node is a fan-out source if it has 2+ outgoing non-fault, non-back-edge connections whose targets share approximately the same Y coordinate (within 20px of each other after dagre runs).
+
+```typescript
+export function detectFanOutGroups(graph: FlowGraph): Map<string, string[]> {
+  // For each node, collect outgoing non-fault non-back targets
+  // If 2+ targets exist and their Y coords are within 20px → fan-out group
+}
+```
+
+Equalisation: sort siblings by current X, compute even spacing (`nodesep=60`), center the group around the parent's centerX, clamp all X ≥ 40.
