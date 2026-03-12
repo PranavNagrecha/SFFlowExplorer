@@ -1,11 +1,11 @@
 import { XMLParser } from 'fast-xml-parser';
-import type { FlowGraph, FlowNode, FlowEdge } from '../model/flow-graph.js';
+import type { FlowGraph, FlowNode, FlowEdge, FlowVariable } from '../model/flow-graph.js';
 
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
   parseAttributeValue: true,
-  isArray: (tagName) =>
+  isArray: (tagName: string): boolean =>
     [
       'decisions',
       'rules',
@@ -23,6 +23,7 @@ const parser = new XMLParser({
       'assignmentItems',
       'conditions',
       'waitEvents',
+      'variables',
     ].includes(tagName),
 });
 
@@ -384,10 +385,20 @@ export function parseFlow(xml: string, flowName: string): FlowGraph {
     }
   }
 
+  // --- Variables ---
+  const variablesRaw = (flow['variables'] as Record<string, unknown>[] | undefined) ?? [];
+  const variables: FlowVariable[] = variablesRaw.map((v) => ({
+    name: String(v['name'] ?? ''),
+    dataType: String(v['dataType'] ?? ''),
+    isInput: v['isInput'] === true || v['isInput'] === 'true',
+    isOutput: v['isOutput'] === true || v['isOutput'] === 'true',
+    isCollection: v['isCollection'] === true || v['isCollection'] === 'true',
+  }));
+
   // --- Back-edge detection (post-construction DFS) ---
   detectBackEdges({ flowName, nodes, edges });
 
-  return { flowName, nodes, edges };
+  return { flowName, nodes, edges, variables };
 }
 
 function parseRecordElements(

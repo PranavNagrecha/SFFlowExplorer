@@ -135,6 +135,8 @@ Produce a complete table. Every Flow element type that can appear in a Flow must
 | `collectionProcessors` | `rounded=1` rect | `#FFF9C4` | `#F57F17` | ∑ Collection | |
 | Fault Connector | edge, `dashed=1;strokeColor=#B85450` | — | `#B85450` | Fault | Always rendered as dashed red |
 | Default Connector | edge, `strokeColor=#666666` | — | `#666666` | (label from rule) | |
+| Variable Legend | swimlane container | `#F8F9FA` | `#CCCCCC` | Variables | Bottom-left; absent if no variables |
+| Shape Legend | swimlane container | `#F8F9FA` | `#CCCCCC` | Legend | Bottom-right; only types present in diagram |
 
 ### 1.3 Edge Case Encyclopedia
 
@@ -244,10 +246,19 @@ export interface FlowEdge {
   isBackEdge: boolean;  // Computed during layout
 }
 
+export interface FlowVariable {
+  name: string;
+  dataType: string;
+  isInput: boolean;
+  isOutput: boolean;
+  isCollection: boolean;
+}
+
 export interface FlowGraph {
   flowName: string;
   nodes: Map<string, FlowNode>;
   edges: FlowEdge[];
+  variables?: FlowVariable[];  // optional — absent on inline test fixtures
 }
 ```
 
@@ -314,8 +325,13 @@ Tasks are sized for a single subagent run (roughly 2–5 minutes each). Each tas
 [ ] T21 — auth: sf CLI alias resolution via @salesforce/core
 [ ] T22 — fetcher: retrieve flow from Salesforce org by API name
 [ ] T23 — cli: `generate` command with `--org` and `--flow-name` flags
-[ ] T24 — Integration test: full pipeline with fixture flows (simple, complex, loop, subflow)
-[ ] T25 — README: installation, usage, examples
+[x] T24 — Integration test: full pipeline with fixture flows (simple, complex, loop, subflow)
+[x] T25 — README: installation, usage, examples
+[x] T26 — Variable legend: parse <variables>, render swimlane bottom-left
+[x] T27 — Fault path segregation: identifyFaultOnlyNodes, push rightward post-layout
+[x] T28 — Enriched node labels: object/actionName surfaced via &#xa; line breaks
+[x] T29 — Fan-out/fan-in post-processing: equalise sibling branch spacing
+[x] T30 — Shape legend: render only types present, bottom-right swimlane
 ```
 
 ---
@@ -619,6 +635,36 @@ Date: [date]
 Decision: Build as standalone commander-based CLI first
 Reason: Faster to ship, no sf CLI version dependency. Can wrap as sf plugin later.
 Trade-off: No /sf flow diagram generate UX until Phase 2
+
+### ADR-006: Variables live on FlowGraph, not FlowNode
+Date: 2026-03-12
+Decision: FlowVariable[] is a field on FlowGraph, not on individual FlowNode objects
+Reason: Variables are flow-scoped, not element-scoped. Attaching to graph avoids polluting the node model.
+Trade-off: None — variables have no spatial position in the flow.
+
+### ADR-007: Fault-only node detection by incoming edge analysis
+Date: 2026-03-12
+Decision: A node is fault-only if ALL its incoming edges have isFault=true
+Reason: Simple, correct, requires no additional metadata from Salesforce.
+Trade-off: A node reachable via both fault and happy-path edges is correctly excluded from segregation.
+
+### ADR-008: Label enrichment in generator, not parser
+Date: 2026-03-12
+Decision: object/actionName sub-labels are built in renderVertex(), reading node.metadata
+Reason: Keeps the model clean. Generator concerns stay in the generator layer.
+Trade-off: metadata is Record<string, unknown> so type guards are required.
+
+### ADR-009: Fan-out equalisation runs after normalisation, before waypoints
+Date: 2026-03-12
+Decision: Post-processing order is dagre → normalise → equalise → segregateFault → waypoints
+Reason: Normalisation must run first so coordinates are positive before sibling math. Waypoints must run last as they depend on final positions.
+Trade-off: None — order is strictly required.
+
+### ADR-010: Shape legend shows only types present in current diagram
+Date: 2026-03-12
+Decision: Legend scans graph.nodes at render time rather than showing a static full list
+Reason: A legend showing shapes that don't appear in the diagram adds noise and implies false complexity.
+Trade-off: Dynamic scanning costs O(n) but is negligible.
 ```
 
 ---

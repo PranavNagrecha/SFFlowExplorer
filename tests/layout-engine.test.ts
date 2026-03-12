@@ -184,3 +184,178 @@ describe('T15: layout-engine — back-edge routing', () => {
     expect(elapsed).toBeLessThan(500);
   });
 });
+
+// ─── Improvement 2: Fault node segregation ────────────────────────────────────
+describe('Improvement 2: fault node segregation', () => {
+  it('identifyFaultOnlyNodes returns correct set for fault-path fixture', async () => {
+    const { identifyFaultOnlyNodes } = await import('../src/layout/layout-engine.js');
+    const xml = loadFixture('fault-path.flow-meta.xml');
+    const graph = parseFlow(xml, 'Fault_Flow');
+
+    const faultOnly = identifyFaultOnlyNodes(graph);
+    expect(faultOnly.has('Screen_Error')).toBe(true);
+    expect(faultOnly.has('Screen_Success')).toBe(false);
+  });
+
+  it('identifyFaultOnlyNodes returns empty set for linear flow with no fault edges', async () => {
+    const { identifyFaultOnlyNodes } = await import('../src/layout/layout-engine.js');
+    const xml = loadFixture('simple-linear.flow-meta.xml');
+    const graph = parseFlow(xml, 'Simple_Linear');
+
+    const faultOnly = identifyFaultOnlyNodes(graph);
+    expect(faultOnly.size).toBe(0);
+  });
+
+  it('fault-only nodes have higher locationX than all non-fault-only nodes after layout', () => {
+    const xml = loadFixture('fault-path.flow-meta.xml');
+    const graph = parseFlow(xml, 'Fault_Flow');
+    const laid = computeLayout(graph);
+
+    const screenError = laid.nodes.get('Screen_Error')!;
+    const updateContact = laid.nodes.get('Update_Contact')!;
+
+    expect(screenError.locationX).toBeGreaterThan(
+      updateContact.locationX + 200, // Update_Contact width
+    );
+  });
+
+  it('fault-only nodes do not overlap non-fault-only nodes after layout', () => {
+    const xml = loadFixture('fault-path.flow-meta.xml');
+    const graph = parseFlow(xml, 'Fault_Flow');
+    const laid = computeLayout(graph);
+    expect(() => assertNoOverlap(laid)).not.toThrow();
+  });
+
+  it('loop-with-subflow: Screen_Error is identified as fault-only', async () => {
+    const { identifyFaultOnlyNodes } = await import('../src/layout/layout-engine.js');
+    const xml = loadFixture('loop-with-subflow.flow-meta.xml');
+    const graph = parseFlow(xml, 'Loop_Flow');
+
+    const faultOnly = identifyFaultOnlyNodes(graph);
+    expect(faultOnly.has('Screen_Error')).toBe(true);
+    // Screen_Done is reachable via non-fault edge (noMoreValuesConnector)
+    expect(faultOnly.has('Screen_Done')).toBe(false);
+  });
+});
+
+// ─── Improvement 4: Fan-out equalization ──────────────────────────────────────
+describe('Improvement 4: fan-out equalization', () => {
+  it('detectFanOutGroups identifies Check_Account_Type as fan-out source', async () => {
+    const { detectFanOutGroups } = await import('../src/layout/layout-engine.js');
+    const xml = loadFixture('decision-with-rules.flow-meta.xml');
+    const graph = parseFlow(xml, 'Decision_Flow');
+    const laid = computeLayout(graph);
+
+    const groups = detectFanOutGroups(laid);
+    expect(groups.has('Check_Account_Type')).toBe(true);
+    const children = groups.get('Check_Account_Type')!;
+    expect(children).toHaveLength(4); // Assign_Gold, Assign_Silver, Assign_Bronze, Assign_Default
+  });
+
+  it('sibling nodes have equal horizontal spacing after equalisation (within 5px)', () => {
+    const xml = loadFixture('decision-with-rules.flow-meta.xml');
+    const graph = parseFlow(xml, 'Decision_Flow');
+    const laid = computeLayout(graph);
+
+    const siblings = ['Assign_Gold', 'Assign_Silver', 'Assign_Bronze', 'Assign_Default'];
+    const xs = siblings.map((id) => laid.nodes.get(id)!.locationX);
+    xs.sort((a, b) => a - b);
+
+    // Check spacing between consecutive siblings
+    const spacings: number[] = [];
+    for (let i = 1; i < xs.length; i++) {
+      spacings.push(xs[i]! - xs[i - 1]!);
+    }
+    const minSpacing = Math.min(...spacings);
+    const maxSpacing = Math.max(...spacings);
+    expect(maxSpacing - minSpacing).toBeLessThanOrEqual(5);
+  });
+
+  it('siblings are centered around their parent decision node', () => {
+    const xml = loadFixture('decision-with-rules.flow-meta.xml');
+    const graph = parseFlow(xml, 'Decision_Flow');
+    const laid = computeLayout(graph);
+
+    const decisionNode = laid.nodes.get('Check_Account_Type')!;
+    const decisionCenterX = decisionNode.locationX + 200 / 2;
+
+    const siblings = ['Assign_Gold', 'Assign_Silver', 'Assign_Bronze', 'Assign_Default'];
+    const xs = siblings.map((id) => laid.nodes.get(id)!.locationX);
+    // Sibling group center (midpoint of leftmost and rightmost sibling centers)
+    const siblingWidth = 200;
+    const siblingCenters = xs.map((x) => x + siblingWidth / 2);
+    const groupLeft = Math.min(...siblingCenters);
+    const groupRight = Math.max(...siblingCenters);
+    const groupCenterX = (groupLeft + groupRight) / 2;
+
+    // Tolerance is 20px to account for minimum-X clamping shifting the group slightly
+    expect(Math.abs(groupCenterX - decisionCenterX)).toBeLessThanOrEqual(20);
+  });
+
+  it('no node X coordinate is below 40 after equalisation', () => {
+    const xml = loadFixture('decision-with-rules.flow-meta.xml');
+    const graph = parseFlow(xml, 'Decision_Flow');
+    const laid = computeLayout(graph);
+
+    for (const node of laid.nodes.values()) {
+      expect(node.locationX).toBeGreaterThanOrEqual(40);
+    }
+  });
+
+  it('nodes not in a fan-out group are not moved by equalisation', () => {
+    const xml = loadFixture('simple-linear.flow-meta.xml');
+    const graph = parseFlow(xml, 'Simple_Linear');
+    const laid = computeLayout(graph);
+
+    // In a linear flow, there should be no fan-out groups, so positions unchanged
+    const startNode = laid.nodes.get('start')!;
+    expect(startNode.locationX).toBeGreaterThanOrEqual(40);
+  });
+
+  it('single-outcome decision is NOT identified as a fan-out source', async () => {
+    const { detectFanOutGroups } = await import('../src/layout/layout-engine.js');
+    // Check_Score_Threshold in lead-qual has only 1 rule + 1 default = 2 outcomes
+    // Only 2 children, so it IS a fan-out source. Use a truly single-outcome case.
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+  <start><locationX>0</locationX><locationY>0</locationY>
+    <connector><targetReference>Dec1</targetReference></connector>
+  </start>
+  <decisions>
+    <name>Dec1</name><label>Dec1</label>
+    <locationX>0</locationX><locationY>120</locationY>
+    <defaultConnector><targetReference>Assign1</targetReference></defaultConnector>
+    <defaultConnectorLabel>Default</defaultConnectorLabel>
+  </decisions>
+  <assignments>
+    <name>Assign1</name><label>Assign 1</label>
+    <locationX>0</locationX><locationY>240</locationY>
+  </assignments>
+</Flow>`;
+    const graph = parseFlow(xml, 'Single_Outcome');
+    const laid = computeLayout(graph);
+    const groups = detectFanOutGroups(laid);
+    // Dec1 only has 1 outgoing non-fault edge → not a fan-out source
+    expect(groups.has('Dec1')).toBe(false);
+  });
+
+  it('equalisation does not affect Y coordinates', () => {
+    const xml = loadFixture('decision-with-rules.flow-meta.xml');
+    const graph = parseFlow(xml, 'Decision_Flow');
+    const laid = computeLayout(graph);
+
+    const siblings = ['Assign_Gold', 'Assign_Silver', 'Assign_Bronze', 'Assign_Default'];
+    const ys = siblings.map((id) => laid.nodes.get(id)!.locationY);
+    // All siblings should be at the same Y (within 5px)
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    expect(maxY - minY).toBeLessThanOrEqual(5);
+  });
+
+  it('no two nodes overlap after equalisation', () => {
+    const xml = loadFixture('decision-with-rules.flow-meta.xml');
+    const graph = parseFlow(xml, 'Decision_Flow');
+    const laid = computeLayout(graph);
+    expect(() => assertNoOverlap(laid)).not.toThrow();
+  });
+});

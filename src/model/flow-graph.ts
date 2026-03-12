@@ -33,8 +33,17 @@ export interface FlowEdge {
   waypoints?: Array<{ x: number; y: number }>;
 }
 
+export interface FlowVariable {
+  name: string;
+  dataType: string;
+  isInput: boolean;
+  isOutput: boolean;
+  isCollection: boolean;
+}
+
 export interface FlowGraph {
   flowName: string;
   nodes: Map<string, FlowNode>;
   edges: FlowEdge[];
+  variables?: FlowVariable[];
 }

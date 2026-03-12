@@ -222,3 +222,26 @@ Minimum fixture set:
 - [ ] Back-edge detection runs after graph construction, not during
 - [ ] Zero TypeScript `any` types in parser code
 - [ ] All fixture flows parse without throwing
+
+---
+
+## Variable Parsing
+
+Add `'variables'` to the `isArray` config list so single-variable flows don't break.
+
+Each `<variables>` element has these fields — extract all of them:
+
+```typescript
+const variablesRaw = (flow['variables'] as Record<string, unknown>[] | undefined) ?? [];
+const variables: FlowVariable[] = variablesRaw.map((v) => ({
+  name: String(v['name'] ?? ''),
+  dataType: String(v['dataType'] ?? 'String'),
+  isCollection: v['isCollection'] === true || String(v['isCollection']) === 'true',
+  isInput:      v['isInput']      === true || String(v['isInput'])      === 'true',
+  isOutput:     v['isOutput']     === true || String(v['isOutput'])     === 'true',
+}));
+```
+
+**Boolean coercion note:** `fast-xml-parser` with `parseAttributeValue: true` may parse `'true'`/`'false'` strings as booleans in attributes but leave them as strings in element content. Guard both cases with the `=== true || === 'true'` pattern.
+
+Return `variables` on the `FlowGraph` object. The field is optional (`variables?: FlowVariable[]`) to avoid breaking inline test fixtures that construct `FlowGraph` without variables.

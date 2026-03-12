@@ -162,3 +162,83 @@ describe('flow-parser', () => {
     });
   });
 });
+
+// ─── Variables parsing ──────────────────────────────────────────────────────
+describe('flow-parser — variables', () => {
+  it('populates variables array from <variables> elements', () => {
+    const xml = loadFixture('lead-qualification.flow-meta.xml');
+    const graph = parseFlow(xml, 'Lead_Qual');
+
+    expect(graph.variables).toBeDefined();
+    expect(graph.variables!.length).toBe(4);
+  });
+
+  it('extracts name and dataType from each variable', () => {
+    const xml = loadFixture('lead-qualification.flow-meta.xml');
+    const graph = parseFlow(xml, 'Lead_Qual');
+
+    const leadScore = graph.variables!.find((v) => v.name === 'leadScore');
+    expect(leadScore).toBeDefined();
+    expect(leadScore!.dataType).toBe('Number');
+  });
+
+  it('isInput defaults to false when element is absent', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+  <start><locationX>0</locationX><locationY>0</locationY></start>
+  <variables>
+    <name>myVar</name>
+    <dataType>String</dataType>
+  </variables>
+</Flow>`;
+    const graph = parseFlow(xml, 'Test');
+
+    expect(graph.variables![0]!.isInput).toBe(false);
+    expect(graph.variables![0]!.isOutput).toBe(false);
+    expect(graph.variables![0]!.isCollection).toBe(false);
+  });
+
+  it('isCollection=true when <isCollection>true</isCollection> is present', () => {
+    const xml = loadFixture('lead-qualification.flow-meta.xml');
+    const graph = parseFlow(xml, 'Lead_Qual');
+
+    const errMessages = graph.variables!.find((v) => v.name === 'errorMessages');
+    expect(errMessages!.isCollection).toBe(true);
+  });
+
+  it('isInput=true for inputLead variable', () => {
+    const xml = loadFixture('lead-qualification.flow-meta.xml');
+    const graph = parseFlow(xml, 'Lead_Qual');
+
+    const inputLead = graph.variables!.find((v) => v.name === 'inputLead');
+    expect(inputLead!.isInput).toBe(true);
+    expect(inputLead!.isOutput).toBe(false);
+  });
+
+  it('isOutput=true for errorMessages variable', () => {
+    const xml = loadFixture('lead-qualification.flow-meta.xml');
+    const graph = parseFlow(xml, 'Lead_Qual');
+
+    const errMessages = graph.variables!.find((v) => v.name === 'errorMessages');
+    expect(errMessages!.isOutput).toBe(true);
+  });
+
+  it('both isInput and isOutput are true for qualificationResult', () => {
+    const xml = loadFixture('lead-qualification.flow-meta.xml');
+    const graph = parseFlow(xml, 'Lead_Qual');
+
+    const qr = graph.variables!.find((v) => v.name === 'qualificationResult');
+    expect(qr!.isInput).toBe(true);
+    expect(qr!.isOutput).toBe(true);
+  });
+
+  it('returns empty variables array for a flow with no variables', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+  <start><locationX>0</locationX><locationY>0</locationY></start>
+</Flow>`;
+    const graph = parseFlow(xml, 'No_Vars');
+
+    expect(graph.variables).toEqual([]);
+  });
+});
