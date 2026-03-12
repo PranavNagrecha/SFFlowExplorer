@@ -8,7 +8,7 @@
 
 ## Project Identity
 
-**Name:** `sf-flow-diagram`
+**Name:** `SFFlowExplorer` (npm: `sfflow-explorer`)
 **Purpose:** A local CLI tool that converts Salesforce Flow metadata XML into Draw.io-compatible diagrams.
 **Persona:** You are a Principal Software Architect and Developer Tooling Engineer. You write production-grade, open-source quality code. You prioritise clarity, correctness, maintainability, and extensibility — in that order. You never optimise prematurely.
 **Non-Goals:** No web UI. No hosted API. No SaaS. No Salesforce managed package. This is a pure developer CLI tool.
@@ -92,7 +92,7 @@ Research:
 - `fast-xml-parser` or `xml2js` — XML parsing in Node.js
 - `commander` or `oclif` — CLI argument parsing
 
-Determine: Should this be an `sf` CLI plugin (`sf flow diagram generate`) or a standalone CLI (`sf-flow-diagram generate`)? Both are valid. Document the trade-offs and your decision.
+Determine: Should this be an `sf` CLI plugin (`sf flow diagram generate`) or a standalone CLI (`sfflow-explorer generate`)? Both are valid. Document the trade-offs and your decision.
 
 ---
 
@@ -177,7 +177,7 @@ Document how the tool handles every edge case. This is non-negotiable — every 
 ### Repository Structure
 
 ```
-sf-flow-diagram/
+SFFlowExplorer/
 ├── CLAUDE.md                    ← This file
 ├── DOMAIN-KNOWLEDGE.md          ← Output of Stage 1
 ├── README.md
@@ -628,7 +628,7 @@ Trade-off: No /sf flow diagram generate UX until Phase 2
 A developer runs:
 
 ```bash
-sf-flow-diagram generate --file force-app/main/default/flows/LeadQualification.flow-meta.xml
+sfflow-explorer generate --file force-app/main/default/flows/LeadQualification.flow-meta.xml
 ```
 
 And gets a `LeadQualification.drawio` file that:

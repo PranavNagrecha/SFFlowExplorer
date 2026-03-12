@@ -1,4 +1,4 @@
-# sf-flow-diagram
+# SFFlowExplorer
 
 A local CLI tool that converts **Salesforce Flow metadata XML** (`.flow-meta.xml`) into **Draw.io-compatible diagrams** (`.drawio`).
 
@@ -45,8 +45,8 @@ No Salesforce org connection required for local files. No SaaS. No web UI. Just 
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-org/sf-flow-diagram.git
-cd sf-flow-diagram
+git clone https://github.com/PranavNagrecha/SFFlowExplorer.git
+cd SFFlowExplorer
 
 # Install dependencies
 npm install
@@ -61,8 +61,8 @@ node dist/cli/index.js generate --file path/to/MyFlow.flow-meta.xml
 ### Option B — Install globally via npm
 
 ```bash
-npm install -g sf-flow-diagram
-sf-flow-diagram generate --file path/to/MyFlow.flow-meta.xml
+npm install -g sfflow-explorer
+sfflow-explorer generate --file path/to/MyFlow.flow-meta.xml
 ```
 
 ---
@@ -72,7 +72,7 @@ sf-flow-diagram generate --file path/to/MyFlow.flow-meta.xml
 ### Generate a diagram from a local file
 
 ```bash
-sf-flow-diagram generate --file force-app/main/default/flows/MyFlow.flow-meta.xml
+sfflow-explorer generate --file force-app/main/default/flows/MyFlow.flow-meta.xml
 ```
 
 By default, the output file is placed **in the same directory as the input file**, named `<FlowName>.drawio`.
@@ -80,7 +80,7 @@ By default, the output file is placed **in the same directory as the input file*
 ### Specify a custom output path
 
 ```bash
-sf-flow-diagram generate \
+sfflow-explorer generate \
   --file force-app/main/default/flows/MyFlow.flow-meta.xml \
   --output diagrams/MyFlow.drawio
 ```
@@ -113,12 +113,12 @@ The `examples/` directory contains a sample flow and its generated output:
 
 ```
 examples/
-└── simple-linear.flow-meta.xml   # Sample Salesforce Flow metadata
+└── lead-qualification.flow-meta.xml   # Sample Salesforce Flow metadata
 ```
 
 Generate it:
 ```bash
-sf-flow-diagram generate --file examples/simple-linear.flow-meta.xml
+sfflow-explorer generate --file examples/lead-qualification.flow-meta.xml
 ```
 
 ---
@@ -150,7 +150,7 @@ npm run typecheck    # tsc --noEmit (no output, just type checking)
 ### Project structure
 
 ```
-sf-flow-diagram/
+SFFlowExplorer/
 ├── src/
 │   ├── cli/
 │   │   ├── index.ts          # CLI entry point (commander)

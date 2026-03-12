@@ -171,7 +171,7 @@ Every Salesforce Flow element type that can appear in a `.flow-meta.xml` file.
 **Reason:** Smaller bundle, simpler Node.js API, no Java subprocess dependency. Adequate for hierarchical flowchart layout. `acyclicer: 'greedy'` handles cycles from loops.
 
 ### ADR-003: Standalone CLI over sf plugin
-**Decision:** Build as a standalone `commander`-based CLI (`sf-flow-diagram generate`).
+**Decision:** Build as a standalone `commander`-based CLI (`sfflow-explorer generate`).
 **Reason:** Faster to ship, zero `sf` CLI version dependency. Can be wrapped as an `sf` plugin in Phase 2.
 
 ### ADR-004: fast-xml-parser over xml2js

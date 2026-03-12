@@ -5,7 +5,7 @@ import { runGenerate } from './generate.js';
 const program = new Command();
 
 program
-  .name('sf-flow-diagram')
+  .name('sfflow-explorer')
   .description('Convert Salesforce Flow metadata XML into Draw.io diagrams')
   .version('0.1.0');
 

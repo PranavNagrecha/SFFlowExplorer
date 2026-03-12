@@ -1,12 +1,12 @@
 {
-  "name": "sf-flow-diagram",
+  "name": "sfflow-explorer",
   "version": "0.1.0",
-  "description": "Converts Salesforce Flow metadata XML (.flow-meta.xml) into Draw.io-compatible diagrams",
+  "description": "Converts Salesforce Flow metadata XML (.flow-meta.xml) into Draw.io-compatible diagrams (SFFlowExplorer)",
   "license": "MIT",
   "type": "module",
   "main": "dist/cli/index.js",
   "bin": {
-    "sf-flow-diagram": "./dist/cli/index.js"
+    "sfflow-explorer": "./dist/cli/index.js"
   },
   "files": [
     "dist/",
