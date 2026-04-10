@@ -25,6 +25,12 @@ const STYLE_MAP: Record<FlowNodeType, string> = {
     'rounded=1;whiteSpace=wrap;html=1;fillColor=#E8DEF8;strokeColor=#6750A4;fontColor=#6750A4;fontStyle=1;',
   collectionProcessor:
     'rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;',
+  wait:
+    'rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2F1;strokeColor=#00897B;fontStyle=1;',
+  customError:
+    'rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontStyle=1;',
+  transform:
+    'rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EAF6;strokeColor=#3F51B5;verticalAlign=top;',
   end:
     'ellipse;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontStyle=1;fontSize=12;',
 };
@@ -42,6 +48,9 @@ const NODE_DIMENSIONS: Record<FlowNodeType, { width: number; height: number }> =
   actionCall: { width: 200, height: 60 },
   subflow: { width: 200, height: 60 },
   collectionProcessor: { width: 200, height: 60 },
+  wait: { width: 200, height: 70 },
+  customError: { width: 200, height: 70 },
+  transform: { width: 200, height: 70 },
   end: { width: 120, height: 60 },
 };
 
@@ -86,6 +95,22 @@ function enrichLabel(node: FlowNode): string {
     case 'actionCall': {
       const actionName = meta['actionName'] as string | undefined;
       return actionName ? `${node.label}\n⚙ ${actionName}` : node.label;
+    }
+    case 'transform': {
+      const objType = meta['objectType'] as string | undefined;
+      return objType ? `${node.label}\n⇄ ${objType}` : node.label;
+    }
+    case 'customError': {
+      const msgs = meta['customErrorMessages'] as Record<string, unknown>[] | Record<string, unknown> | undefined;
+      if (msgs) {
+        const first = Array.isArray(msgs) ? msgs[0] : msgs;
+        const errMsg = first?.['errorMessage'] as string | undefined;
+        if (errMsg) {
+          const truncated = errMsg.length > 40 ? errMsg.slice(0, 37) + '...' : errMsg;
+          return `${node.label}\n⚠ ${truncated}`;
+        }
+      }
+      return `${node.label}\n⚠ Error`;
     }
     default:
       return node.label;
@@ -215,6 +240,9 @@ const NODE_DISPLAY_INFO: Record<FlowNodeType, NodeDisplayInfo> = {
   actionCall:          { displayName: 'Action',            description: 'Calls Apex or invocable action' },
   subflow:             { displayName: 'Subflow',           description: 'References another flow' },
   collectionProcessor: { displayName: 'Collection',       description: 'Processes a collection' },
+  wait:                { displayName: 'Wait',              description: 'Pauses flow until event fires' },
+  customError:         { displayName: 'Custom Error',      description: 'Throws a validation error' },
+  transform:           { displayName: 'Transform',         description: 'Maps and transforms data' },
   end:                 { displayName: 'End',               description: 'Terminates the flow' },
 };
 
@@ -251,7 +279,8 @@ function renderShapeLegend(graph: FlowGraph): string {
   const NODE_WIDTHS: Record<FlowNodeType, number> = {
     start: 120, decision: 200, assignment: 200, loop: 200,
     recordCreate: 200, recordUpdate: 200, recordDelete: 200, recordLookup: 200,
-    screen: 200, actionCall: 200, subflow: 200, collectionProcessor: 200, end: 120,
+    screen: 200, actionCall: 200, subflow: 200, collectionProcessor: 200,
+    wait: 200, customError: 200, transform: 200, end: 120,
   };
 
   let maxNodeRight = 0;

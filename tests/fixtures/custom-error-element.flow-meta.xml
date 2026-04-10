@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>56.0</apiVersion>
+    <label>Custom Error Test</label>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>50</locationX>
+        <locationY>50</locationY>
+        <connector>
+            <targetReference>Check_Amount</targetReference>
+        </connector>
+    </start>
+    <decisions>
+        <name>Check_Amount</name>
+        <label>Check Amount</label>
+        <locationX>300</locationX>
+        <locationY>200</locationY>
+        <rules>
+            <name>Amount_Invalid</name>
+            <label>Amount Invalid</label>
+            <connector>
+                <targetReference>Block_Record_Save</targetReference>
+            </connector>
+        </rules>
+        <defaultConnector>
+            <targetReference>Field_Level_Error</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Amount OK</defaultConnectorLabel>
+    </decisions>
+    <customErrors>
+        <name>Block_Record_Save</name>
+        <label>Block Record Save</label>
+        <locationX>100</locationX>
+        <locationY>400</locationY>
+        <customErrorMessages>
+            <errorMessage>This record cannot be saved because the status is Closed.</errorMessage>
+            <isFieldError>false</isFieldError>
+        </customErrorMessages>
+    </customErrors>
+    <customErrors>
+        <name>Field_Level_Error</name>
+        <label>Field Level Error</label>
+        <locationX>500</locationX>
+        <locationY>400</locationY>
+        <customErrorMessages>
+            <errorMessage>Amount must be greater than zero.</errorMessage>
+            <fieldSelection>Amount</fieldSelection>
+            <isFieldError>true</isFieldError>
+        </customErrorMessages>
+        <connector>
+            <targetReference>Log_Error</targetReference>
+        </connector>
+    </customErrors>
+    <assignments>
+        <name>Log_Error</name>
+        <label>Log Error</label>
+        <locationX>500</locationX>
+        <locationY>600</locationY>
+    </assignments>
+</Flow>

@@ -11,6 +11,9 @@ export type FlowNodeType =
   | 'actionCall'
   | 'subflow'
   | 'collectionProcessor'
+  | 'wait'
+  | 'customError'
+  | 'transform'
   | 'end';
 
 export interface FlowNode {
