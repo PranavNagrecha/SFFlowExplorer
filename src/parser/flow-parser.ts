@@ -552,6 +552,9 @@ export function parseFlow(xml: string, flowName: string): FlowGraph {
     isCollection: v['isCollection'] === true || v['isCollection'] === 'true',
   }));
 
+  // --- Synthesise End nodes for terminal nodes (no outgoing edges) ---
+  synthesiseEndNodes(nodes, edges);
+
   // --- Back-edge detection (post-construction DFS) ---
   detectBackEdges({ flowName, nodes, edges });
 
@@ -616,6 +619,40 @@ function parseRecordElements(
         });
       }
     }
+  }
+}
+
+function synthesiseEndNodes(
+  nodes: Map<string, FlowNode>,
+  edges: FlowEdge[],
+): void {
+  const sourcesWithOutgoing = new Set(edges.map((e) => e.sourceId));
+
+  const terminalNodeIds = [...nodes.entries()]
+    .filter(([id, node]) => node.type !== 'start' && !sourcesWithOutgoing.has(id))
+    .map(([id]) => id);
+
+  for (const nodeId of terminalNodeIds) {
+    const node = nodes.get(nodeId)!;
+
+    const endId = `end__${nodeId}`;
+    nodes.set(endId, {
+      id: endId,
+      name: endId,
+      label: 'End',
+      type: 'end',
+      locationX: node.locationX,
+      locationY: node.locationY + 120,
+      metadata: {},
+    });
+
+    edges.push({
+      id: makeEdgeId(nodeId, 'end'),
+      sourceId: nodeId,
+      targetId: endId,
+      isFault: false,
+      isBackEdge: false,
+    });
   }
 }
 

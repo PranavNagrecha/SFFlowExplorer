@@ -78,9 +78,10 @@ describe('customErrors element parsing', () => {
     expect(node2!.type).toBe('customError');
   });
 
-  it('parses terminal customError (no connector) correctly', () => {
+  it('parses terminal customError (no user-defined connector, only synthesised End)', () => {
     const outgoing = graph.edges.filter(e => e.sourceId === 'Block_Record_Save');
-    expect(outgoing.length).toBe(0);
+    expect(outgoing.length).toBe(1);
+    expect(outgoing[0].targetId).toBe('end__Block_Record_Save');
   });
 
   it('parses customError with connector', () => {
@@ -124,9 +125,10 @@ describe('transforms element parsing', () => {
     expect(outgoing[0].targetId).toBe('Create_Lead');
   });
 
-  it('parses transform without connector (terminal)', () => {
+  it('parses transform without connector (terminal, gets synthesised End)', () => {
     const outgoing = graph.edges.filter(e => e.sourceId === 'Count_Line_Items');
-    expect(outgoing.length).toBe(0);
+    expect(outgoing.length).toBe(1);
+    expect(outgoing[0].targetId).toBe('end__Count_Line_Items');
   });
 
   it('stores objectType in metadata', () => {
