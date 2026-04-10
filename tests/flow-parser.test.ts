@@ -98,7 +98,8 @@ describe('flow-parser', () => {
       const xml = loadFixture('simple-linear.flow-meta.xml');
       const graph = parseFlow(xml, 'Simple_Linear_Flow');
 
-      expect(graph.nodes.size).toBe(4);
+      // 4 original nodes + 1 synthesised End node
+      expect(graph.nodes.size).toBe(5);
     });
 
     it('assigns correct types to all nodes', () => {
@@ -115,7 +116,8 @@ describe('flow-parser', () => {
       const xml = loadFixture('simple-linear.flow-meta.xml');
       const graph = parseFlow(xml, 'Simple_Linear_Flow');
 
-      expect(graph.edges).toHaveLength(3);
+      // 3 original edges + 1 edge to synthesised End node
+      expect(graph.edges).toHaveLength(4);
     });
 
     it('edges form the correct chain: start→assign1→assign2→screen', () => {
