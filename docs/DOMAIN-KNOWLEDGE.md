@@ -38,6 +38,9 @@ Every Salesforce Flow element type that can appear in a `.flow-meta.xml` file.
 | Action Call | `<actionCalls>` | `rounded=1` rect | `#F5F5F5` | `#666666` | 200×60 | ⚙ Action | Apex / invocable. May have `<faultConnector>`. |
 | Subflow | `<subflows>` | `rounded=1` rect | `#E8DEF8` | `#6750A4` | 200×60 | ⤵ Subflow | References another flow by `flowName`. Treated as layout sink. Purple family. |
 | Collection Processor | `<collectionProcessors>` | `rounded=1` rect | `#FFF9C4` | `#F57F17` | 200×60 | ∑ Collection | `collectionProcessorType` determines subtype label. |
+| Wait | `<waits>` | `rounded=1` rect | `#E0F2F1` | `#00897B` | 200×70 | ⏳ Wait | Pause/resume. `waitEvents[]` like `rules[]` in decisions: N event edges + default + fault. |
+| Custom Error | `<customErrors>` | `rounded=1` rect | `#F8CECC` | `#B85450` | 200×70 | ⚠ Error | Declarative validation. Often terminal (no connector). `customErrorMessages` for sublabel. |
+| Transform | `<transforms>` | `rounded=1` rect | `#E8EAF6` | `#3F51B5` | 200×70 | ⇄ Transform | Data mapping/aggregation. Single connector, no fault. `objectType` for sublabel. |
 | End (implicit) | No element — synthesised | `ellipse` | `#F8CECC` | `#B85450` | 120×60 | ■ End | Generated when a connector points to `null` / no `targetReference`. |
 | **Fault Connector** | `<faultConnector>` | edge | — | `#B85450` | — | Fault | `dashed=1;strokeColor=#B85450;fontColor=#B85450;strokeWidth=2;` |
 | **Default Connector** | `<defaultConnector>` in `<decisions>` | edge | — | `#666666` | Default | Uses `defaultConnectorLabel` if present, else "Default". |
@@ -95,7 +98,7 @@ Every Salesforce Flow element type that can appear in a `.flow-meta.xml` file.
 **What it is:** When a Salesforce Flow has exactly one `<decisions>` element, `fast-xml-parser` returns it as a plain object, not an array, unless `isArray` is configured.
 
 **Strategy:**
-- Configure `isArray` for all collection tags: `decisions`, `rules`, `connectors`, `assignments`, `loops`, `recordCreates`, `recordUpdates`, `recordDeletes`, `recordLookups`, `screens`, `actionCalls`, `subflows`, `collectionProcessors`, `assignmentItems`, `conditions`, `waitEvents`.
+- Configure `isArray` for all collection tags: `decisions`, `rules`, `connectors`, `assignments`, `loops`, `recordCreates`, `recordUpdates`, `recordDeletes`, `recordLookups`, `screens`, `actionCalls`, `subflows`, `collectionProcessors`, `assignmentItems`, `conditions`, `waitEvents`, `variables`.
 - Always use `?? []` when iterating.
 
 **Failure mode if ignored:** `for...of` on a non-array object throws `TypeError: x is not iterable` at runtime.
@@ -160,6 +163,19 @@ Every Salesforce Flow element type that can appear in a `.flow-meta.xml` file.
 
 ---
 
+### 3.10 Flow Variables
+
+**What it is:** Flows can declare `<variables>` (input, output, or collection) in the metadata. These are not graph nodes but describe the flow’s data contract.
+
+**Strategy:**
+- Parse `<variables>` in the flow parser; normalise with `isArray: ['variables', ...]` so a single variable is still an array.
+- Add `FlowVariable[]` to `FlowGraph` (`variables` optional). Each variable has `name`, `dataType`, `isInput`, `isOutput`, `isCollection`.
+- In the Draw.io generator, when `variables.length > 0`, render a legend (swimlane) below the diagram: one row per variable, with prefix → (input), ← (output), ↔ (in/out), • (internal), and colour by role (e.g. green input, blue output, purple in/out).
+
+**Failure mode if ignored:** Variable metadata is dropped; the diagram does not document the flow’s inputs/outputs.
+
+---
+
 ## 4. Architecture Decisions
 
 ### ADR-001: Uncompressed XML output
@@ -202,6 +218,9 @@ Before writing the parser for each element, I must answer:
 | `actionCalls` | Apex / invocable | rounded rect | Fault connector may exist; `actionType` distinguishes Apex from invocable |
 | `subflows` | Nested flow ref | rounded rect (purple) | Layout sink — no outgoing edges unless `--follow-subflows`; referenced file may not exist |
 | `collectionProcessors` | Collection ops | rounded rect | `collectionProcessorType` field determines label; may be missing |
+| `waits` | Pause/resume | rounded rect (teal) | `waitEvents[]` analogous to `rules[]` in decisions. Each event has own connector. Default + fault connectors optional. `elementSubtype` may be `WaitDuration`. `offset`/`offsetUnit` on waitEvents (not inputParameters in all cases). |
+| `customErrors` | Validation error | rounded rect (red) | Often terminal (no connector = blocks save). `customErrorMessages[]` with `errorMessage`, `fieldSelection`, `isFieldError`. Optional `faultConnector`. API v56.0+. |
+| `transforms` | Data mapping | rounded rect (indigo) | Single connector, NO fault connector (in-memory only). `transformValues[]` → `transformValueActions[]` with `transformType` (Map/Count/Sum/GetItemByIndex/InnerJoin). `objectType`/`dataType` metadata. GA Summer '24. |
 | End (synthesised) | Terminal node | ellipse (red) | Generated from connectors pointing to absent nodes — must be idempotent (one end node) |
 
 ---

@@ -24,6 +24,12 @@ const parser = new XMLParser({
       'conditions',
       'waitEvents',
       'variables',
+      'waits',
+      'customErrors',
+      'customErrorMessages',
+      'transforms',
+      'transformValues',
+      'transformValueActions',
     ].includes(tagName),
 });
 
@@ -383,6 +389,157 @@ export function parseFlow(xml: string, flowName: string): FlowGraph {
         });
       }
     }
+  }
+
+  // --- Waits (analogous to decisions: waitEvents[] like rules[]) ---
+  const waits = (flow['waits'] as Record<string, unknown>[] | undefined) ?? [];
+  for (const wait of waits) {
+    const name = String(wait['name'] ?? '');
+    const label = String(wait['label'] ?? name);
+    const coords = extractCoords(wait);
+
+    nodes.set(name, {
+      id: name,
+      name,
+      label,
+      type: 'wait',
+      locationX: coords.locationX,
+      locationY: coords.locationY,
+      metadata: wait,
+    });
+
+    const waitEvts = (wait['waitEvents'] as Record<string, unknown>[] | undefined) ?? [];
+    for (const evt of waitEvts) {
+      const evtConnector = evt['connector'] as Record<string, unknown> | undefined;
+      if (evtConnector !== undefined) {
+        const target = String(evtConnector['targetReference'] ?? '');
+        const evtLabel = String(evt['label'] ?? '');
+        if (target) {
+          const edge: FlowEdge = {
+            id: makeEdgeId(name, evtLabel || target),
+            sourceId: name,
+            targetId: target,
+            isFault: false,
+            isBackEdge: false,
+          };
+          if (evtLabel) {
+            edge.label = evtLabel;
+          }
+          edges.push(edge);
+        }
+      }
+    }
+
+    const defaultConnector = wait['defaultConnector'] as Record<string, unknown> | undefined;
+    if (defaultConnector !== undefined) {
+      const target = String(defaultConnector['targetReference'] ?? '');
+      const defaultLabel = String(wait['defaultConnectorLabel'] ?? 'Default');
+      if (target) {
+        edges.push({
+          id: makeEdgeId(name, 'default'),
+          sourceId: name,
+          targetId: target,
+          label: defaultLabel,
+          isFault: false,
+          isBackEdge: false,
+        });
+      }
+    }
+
+    const faultConnector = wait['faultConnector'] as Record<string, unknown> | undefined;
+    if (faultConnector !== undefined) {
+      const target = String(faultConnector['targetReference'] ?? '');
+      if (target) {
+        edges.push({
+          id: makeEdgeId(name, 'fault'),
+          sourceId: name,
+          targetId: target,
+          label: 'Fault',
+          isFault: true,
+          isBackEdge: false,
+        });
+      }
+    }
+  }
+
+  // --- Custom Errors ---
+  const customErrors = (flow['customErrors'] as Record<string, unknown>[] | undefined) ?? [];
+  for (const ce of customErrors) {
+    const name = String(ce['name'] ?? '');
+    const label = String(ce['label'] ?? name);
+    const coords = extractCoords(ce);
+
+    nodes.set(name, {
+      id: name,
+      name,
+      label,
+      type: 'customError',
+      locationX: coords.locationX,
+      locationY: coords.locationY,
+      metadata: ce,
+    });
+
+    const connector = ce['connector'] as Record<string, unknown> | undefined;
+    if (connector !== undefined) {
+      const target = String(connector['targetReference'] ?? '');
+      if (target) {
+        edges.push({
+          id: makeEdgeId(name, 'connector'),
+          sourceId: name,
+          targetId: target,
+          isFault: false,
+          isBackEdge: false,
+        });
+      }
+    }
+
+    const faultConnector = ce['faultConnector'] as Record<string, unknown> | undefined;
+    if (faultConnector !== undefined) {
+      const target = String(faultConnector['targetReference'] ?? '');
+      if (target) {
+        edges.push({
+          id: makeEdgeId(name, 'fault'),
+          sourceId: name,
+          targetId: target,
+          label: 'Fault',
+          isFault: true,
+          isBackEdge: false,
+        });
+      }
+    }
+  }
+
+  // --- Transforms ---
+  const transforms = (flow['transforms'] as Record<string, unknown>[] | undefined) ?? [];
+  for (const tf of transforms) {
+    const name = String(tf['name'] ?? '');
+    const label = String(tf['label'] ?? name);
+    const coords = extractCoords(tf);
+
+    nodes.set(name, {
+      id: name,
+      name,
+      label,
+      type: 'transform',
+      locationX: coords.locationX,
+      locationY: coords.locationY,
+      metadata: tf,
+    });
+
+    const connector = tf['connector'] as Record<string, unknown> | undefined;
+    if (connector !== undefined) {
+      const target = String(connector['targetReference'] ?? '');
+      if (target) {
+        edges.push({
+          id: makeEdgeId(name, 'connector'),
+          sourceId: name,
+          targetId: target,
+          isFault: false,
+          isBackEdge: false,
+        });
+      }
+    }
+    // No faultConnector for transforms — operates on in-memory data only
   }
 
   // --- Variables ---

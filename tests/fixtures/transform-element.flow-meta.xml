@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>61.0</apiVersion>
+    <label>Transform Element Test</label>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>50</locationX>
+        <locationY>50</locationY>
+        <connector>
+            <targetReference>Map_Request_To_Lead</targetReference>
+        </connector>
+    </start>
+    <transforms>
+        <name>Map_Request_To_Lead</name>
+        <label>Map Request to Lead</label>
+        <locationX>300</locationX>
+        <locationY>200</locationY>
+        <connector>
+            <targetReference>Create_Lead</targetReference>
+        </connector>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <objectType>Lead</objectType>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+        <transformValues>
+            <transformValueActions>
+                <outputFieldApiName>FirstName</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <elementReference>requestRecord.First_Name__c</elementReference>
+                </value>
+            </transformValueActions>
+            <transformValueActions>
+                <outputFieldApiName>LastName</outputFieldApiName>
+                <transformType>Map</transformType>
+                <value>
+                    <elementReference>requestRecord.Last_Name__c</elementReference>
+                </value>
+            </transformValueActions>
+        </transformValues>
+    </transforms>
+    <transforms>
+        <name>Count_Line_Items</name>
+        <label>Count Line Items</label>
+        <locationX>300</locationX>
+        <locationY>400</locationY>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <scale>0</scale>
+        <transformValues>
+            <transformValueActions>
+                <transformType>Count</transformType>
+                <value>
+                    <elementReference>lineItemCollection</elementReference>
+                </value>
+            </transformValueActions>
+        </transformValues>
+    </transforms>
+    <recordCreates>
+        <name>Create_Lead</name>
+        <label>Create Lead</label>
+        <locationX>300</locationX>
+        <locationY>600</locationY>
+        <object>Lead</object>
+    </recordCreates>
+</Flow>

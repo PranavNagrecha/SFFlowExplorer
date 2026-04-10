@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>61.0</apiVersion>
+    <label>Wait Element Test</label>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>50</locationX>
+        <locationY>50</locationY>
+        <connector>
+            <targetReference>Wait_for_Approval_or_Timeout</targetReference>
+        </connector>
+    </start>
+    <waits>
+        <description>Wait for approval or timeout after 48 hours</description>
+        <name>Wait_for_Approval_or_Timeout</name>
+        <elementSubtype>WaitDuration</elementSubtype>
+        <label>Wait for Approval or Timeout</label>
+        <locationX>327</locationX>
+        <locationY>200</locationY>
+        <defaultConnector>
+            <targetReference>Send_Reminder</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Default Path</defaultConnectorLabel>
+        <faultConnector>
+            <targetReference>Log_Wait_Error</targetReference>
+        </faultConnector>
+        <waitEvents>
+            <conditionLogic>and</conditionLogic>
+            <connector>
+                <targetReference>Process_Approved</targetReference>
+            </connector>
+            <label>Approval Received</label>
+            <offset>0</offset>
+            <offsetUnit>Hours</offsetUnit>
+        </waitEvents>
+        <waitEvents>
+            <conditionLogic>and</conditionLogic>
+            <connector>
+                <targetReference>Send_Timeout_Notice</targetReference>
+            </connector>
+            <label>48 Hour Timeout</label>
+            <offset>48</offset>
+            <offsetUnit>Hours</offsetUnit>
+        </waitEvents>
+    </waits>
+    <assignments>
+        <name>Process_Approved</name>
+        <label>Process Approved</label>
+        <locationX>100</locationX>
+        <locationY>400</locationY>
+    </assignments>
+    <assignments>
+        <name>Send_Timeout_Notice</name>
+        <label>Send Timeout Notice</label>
+        <locationX>327</locationX>
+        <locationY>400</locationY>
+    </assignments>
+    <assignments>
+        <name>Send_Reminder</name>
+        <label>Send Reminder</label>
+        <locationX>550</locationX>
+        <locationY>400</locationY>
+    </assignments>
+    <assignments>
+        <name>Log_Wait_Error</name>
+        <label>Log Wait Error</label>
+        <locationX>750</locationX>
+        <locationY>400</locationY>
+    </assignments>
+</Flow>
